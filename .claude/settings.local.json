@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/d/company_chat/company_chat/src/components/Auth/**)",
+      "Read(//mnt/d/company_chat/company_chat/src/components/Chat/**)",
+      "Read(//mnt/d/company_chat/company_chat/src/components/**)",
+      "Read(//mnt/c/Users/thira/Downloads/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

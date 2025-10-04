@@ -37,11 +37,14 @@ export default function ChatRoomScreen({ group, onBack }) {
             id: doc.id,
             ...doc.data(),
           }));
+          console.log('Snapshot update - Messages count:', messagesData.length);
           setMessages(messagesData);
         },
         error => {
           console.error('Error fetching messages:', error);
-        }
+          Alert.alert('Error', error.message);
+        },
+        { includeMetadataChanges: false }
       );
 
     return unsubscribe;
@@ -55,11 +58,13 @@ export default function ChatRoomScreen({ group, onBack }) {
       return;
     }
 
+    const messageText = newMessage;
+    setNewMessage('');
     setLoading(true);
 
     try {
       const messageData = {
-        text: newMessage,
+        text: messageText,
         groupId: group.id,
         senderId: currentUser.uid,
         senderName: userData?.name || 'Unknown User',
@@ -69,10 +74,10 @@ export default function ChatRoomScreen({ group, onBack }) {
       };
 
       await firestore().collection('messages').add(messageData);
-      setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message');
+      setNewMessage(messageText); // Restore message on error
     } finally {
       setLoading(false);
     }
@@ -136,9 +141,13 @@ export default function ChatRoomScreen({ group, onBack }) {
   };
 
   const formatTime = (timestamp) => {
-    if (!timestamp) return 'Now';
-    const date = timestamp.toDate();
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!timestamp || !timestamp.toDate) return 'Now';
+    try {
+      const date = timestamp.toDate();
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (error) {
+      return 'Now';
+    }
   };
 
   const renderMessage = ({ item }) => {
