@@ -1,26 +1,36 @@
 {
   "project_info": {
-    "project_number": "123456789",
-    "project_id": "company-chat-demo",
-    "storage_bucket": "company-chat-demo.appspot.com"
+    "project_number": "430268824595",
+    "project_id": "company-chat-473609",
+    "storage_bucket": "company-chat-473609.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789:android:abc123",
+        "mobilesdk_app_id": "1:430268824595:android:72fa06f51f4285963513e6",
         "android_client_info": {
           "package_name": "com.companychatmobile"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "430268824595-lml25otp7g4n17akkrb2pm3l5c01j6pu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDEMO-KEY-REPLACE-WITH-REAL"
+          "current_key": "AIzaSyDLfcj5y-VIrKD_vgnoehaytryxsb6J5BQ"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "430268824595-lml25otp7g4n17akkrb2pm3l5c01j6pu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
