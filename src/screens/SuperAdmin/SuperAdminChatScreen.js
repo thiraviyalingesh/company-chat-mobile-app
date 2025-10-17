@@ -1,37 +1,38 @@
 /**
- * Dashboard Screen - Chat UI for ALL users
- * - Project selector dropdown
- * - Collapsible sections: CHANNELS, GROUPS, USERS
- * - Conditional "Dashboard" button (only for project admins)
+ * SuperAdmin Chat Screen
+ * Matches web app's SuperAdminChat.js
+ * - Project selector
+ * - Channels, Groups, Users sections
+ * - Access to all projects and chats
  */
 
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Modal,
+  StyleSheet,
   ScrollView,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import firestore from '@react-native-firebase/firestore';
-import ChatRoomScreen from './Chat/ChatRoomScreen';
-import DirectChatRoomScreen from './Chat/DirectChatRoomScreen';
+import ChatRoomScreen from '../Chat/ChatRoomScreen';
+import DirectChatRoomScreen from '../Chat/DirectChatRoomScreen';
 
-export default function DashboardScreen({ navigation }) {
-  const { currentUser, userData, userProjects, logout } = useAuth();
+export default function SuperAdminChatScreen({ navigation }) {
+  const { currentUser, userData } = useAuth();
   const [loading, setLoading] = useState(true);
 
   // Project selection
+  const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
 
   // Chat data
-  const [channels, setChannels] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [channels, setChannels] = useState([]);
   const [projectUsers, setProjectUsers] = useState([]);
 
   // Collapsible sections
@@ -43,15 +44,33 @@ export default function DashboardScreen({ navigation }) {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Set initial project when userProjects loads
+  // Fetch all projects (SuperAdmin has access to all)
   useEffect(() => {
-    if (userProjects && userProjects.length > 0 && !selectedProject) {
-      setSelectedProject(userProjects[0]);
-    }
-    if (userProjects && userProjects.length > 0) {
-      setLoading(false);
-    }
-  }, [userProjects]);
+    const unsubscribe = firestore()
+      .collection('projects')
+      .where('isActive', '==', true)
+      .onSnapshot(
+        snapshot => {
+          const projectsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setProjects(projectsData);
+
+          // Auto-select first project
+          if (projectsData.length > 0 && !selectedProject) {
+            setSelectedProject(projectsData[0]);
+          }
+          setLoading(false);
+        },
+        error => {
+          console.error('Error fetching projects:', error);
+          setLoading(false);
+        }
+      );
+
+    return unsubscribe;
+  }, []);
 
   // Fetch groups/channels for selected project
   useEffect(() => {
@@ -64,7 +83,6 @@ export default function DashboardScreen({ navigation }) {
     const unsubscribe = firestore()
       .collection('groups')
       .where('projectId', '==', selectedProject.id)
-      .where('members', 'array-contains', currentUser.uid)
       .onSnapshot(
         snapshot => {
           const groupsData = snapshot.docs.map(doc => ({
@@ -85,7 +103,7 @@ export default function DashboardScreen({ navigation }) {
       );
 
     return unsubscribe;
-  }, [currentUser, selectedProject]);
+  }, [selectedProject]);
 
   // Fetch users for selected project
   useEffect(() => {
@@ -132,28 +150,6 @@ export default function DashboardScreen({ navigation }) {
     fetchProjectUsers();
   }, [selectedProject]);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-            } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to logout');
-            }
-          },
-        },
-      ]
-    );
-  };
-
   const handleSelectGroup = group => {
     setSelectedGroup(group);
     setSelectedUser(null);
@@ -171,14 +167,11 @@ export default function DashboardScreen({ navigation }) {
     setSelectedUser(null);
   };
 
-  // Check if current user is project admin in selected project
-  const isProjectAdmin = selectedProject?.userRole === 'project_admin';
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading chat...</Text>
       </View>
     );
   }
@@ -208,22 +201,15 @@ export default function DashboardScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>TrunkTalk</Text>
-        </View>
-        <View style={styles.headerRight}>
-          {/* Dashboard button - only for project admins */}
-          {isProjectAdmin && (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('ProjectAdmin')}
-              style={styles.dashboardButton}
-            >
-              <Text style={styles.dashboardButtonText}>📊 Dashboard</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Text style={styles.logoutText}>Logout</Text>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Text style={styles.backButtonText}>← Dashboard</Text>
           </TouchableOpacity>
         </View>
+        <Text style={styles.headerTitle}>SuperAdmin Chat</Text>
+        <View style={styles.headerRight} />
       </View>
 
       {/* Project Selector */}
@@ -247,15 +233,11 @@ export default function DashboardScreen({ navigation }) {
             <Text style={styles.emptyIcon}>📁</Text>
             <Text style={styles.emptyText}>No Project Selected</Text>
             <Text style={styles.emptySubtext}>
-              {userProjects && userProjects.length > 0
-                ? 'Please select a project to view chats'
-                : 'You are not assigned to any projects yet'}
+              Please select a project to view chats
             </Text>
-            {userProjects && userProjects.length > 0 && (
-              <Text style={styles.emptyCount}>
-                {userProjects.length} {userProjects.length === 1 ? 'project' : 'projects'}
-              </Text>
-            )}
+            <Text style={styles.emptyCount}>
+              {projects.length} {projects.length === 1 ? 'project' : 'projects'} available
+            </Text>
           </View>
         ) : (
           <>
@@ -344,39 +326,37 @@ export default function DashboardScreen({ navigation }) {
                   {projectUsers.length === 0 ? (
                     <Text style={styles.noItems}>No users in this project</Text>
                   ) : (
-                    projectUsers
-                      .filter(user => user && user.id)
-                      .map(user => (
-                        <TouchableOpacity
-                          key={user.id}
-                          style={styles.userItem}
-                          onPress={() => handleSelectUser(user)}
-                        >
-                          <View style={styles.userAvatar}>
-                            <Text style={styles.userAvatarText}>
-                              {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                            </Text>
-                          </View>
-                          <View style={styles.userInfo2}>
-                            <View style={styles.userNameRow}>
-                              <Text style={styles.userName2}>{user.name || 'Unknown'}</Text>
-                              <View
-                                style={[
-                                  styles.roleBadge,
-                                  user.role === 'project_admin'
-                                    ? styles.roleBadgeAdmin
-                                    : styles.roleBadgeUser,
-                                ]}
-                              >
-                                <Text style={styles.roleBadgeText}>
-                                  {user.role === 'project_admin' ? 'Admin' : 'User'}
-                                </Text>
-                              </View>
+                    projectUsers.map(user => (
+                      <TouchableOpacity
+                        key={user.id}
+                        style={styles.userItem}
+                        onPress={() => handleSelectUser(user)}
+                      >
+                        <View style={styles.userAvatar}>
+                          <Text style={styles.userAvatarText}>
+                            {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                          </Text>
+                        </View>
+                        <View style={styles.userInfo}>
+                          <View style={styles.userNameRow}>
+                            <Text style={styles.userName}>{user.name}</Text>
+                            <View
+                              style={[
+                                styles.roleBadge,
+                                user.role === 'project_admin'
+                                  ? styles.roleBadgeAdmin
+                                  : styles.roleBadgeUser,
+                              ]}
+                            >
+                              <Text style={styles.roleBadgeText}>
+                                {user.role === 'project_admin' ? 'Admin' : 'User'}
+                              </Text>
                             </View>
-                            <Text style={styles.userPhone2}>{user.phoneNumber || 'No phone'}</Text>
                           </View>
-                        </TouchableOpacity>
-                      ))
+                          <Text style={styles.userPhone}>{user.phoneNumber}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))
                   )}
                 </View>
               )}
@@ -396,7 +376,7 @@ export default function DashboardScreen({ navigation }) {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.projectList}>
-              {userProjects && userProjects.map(project => (
+              {projects.map(project => (
                 <TouchableOpacity
                   key={project.id}
                   style={[
@@ -408,9 +388,6 @@ export default function DashboardScreen({ navigation }) {
                   <Text style={styles.projectIcon}>📁</Text>
                   <View style={styles.projectOptionInfo}>
                     <Text style={styles.projectOptionName}>{project.name}</Text>
-                    <Text style={styles.projectOptionRole}>
-                      {project.userRole === 'project_admin' ? 'Project Admin' : 'Member'}
-                    </Text>
                   </View>
                   {selectedProject?.id === project.id && (
                     <Text style={styles.projectOptionCheck}>✓</Text>
@@ -454,33 +431,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
+    flex: 2,
+    textAlign: 'center',
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  dashboardButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  dashboardButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  logoutButton: {
-    padding: 8,
-  },
-  logoutText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    flex: 1,
   },
   backButton: {
     padding: 5,
@@ -598,7 +556,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  userInfo2: {
+  userInfo: {
     flex: 1,
   },
   userNameRow: {
@@ -606,15 +564,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  userName2: {
+  userName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
     marginRight: 8,
-  },
-  userPhone2: {
-    fontSize: 13,
-    color: '#666',
   },
   roleBadge: {
     paddingHorizontal: 8,
@@ -631,6 +585,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     fontWeight: '600',
+  },
+  userPhone: {
+    fontSize: 13,
+    color: '#666',
   },
   emptyState: {
     padding: 60,
@@ -656,23 +614,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
     fontWeight: '600',
-  },
-  comingSoon: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  comingSoonText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
-  },
-  comingSoonSubtext: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -713,7 +654,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   projectOptionSelected: {
-    backgroundColor: '#fff8f0',
+    backgroundColor: '#f0f8ff',
   },
   projectIcon: {
     fontSize: 28,
@@ -727,15 +668,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  projectOptionRole: {
-    fontSize: 12,
-    color: '#007AFF',
-    marginTop: 2,
-    fontWeight: '600',
-  },
   projectOptionCheck: {
     fontSize: 20,
     color: '#007AFF',
     fontWeight: 'bold',
+  },
+  comingSoon: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  comingSoonText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+  comingSoonSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
 });

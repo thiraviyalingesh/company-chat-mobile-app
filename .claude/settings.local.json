@@ -4,7 +4,22 @@
       "Read(//mnt/d/company_chat/company_chat/src/components/Auth/**)",
       "Read(//mnt/d/company_chat/company_chat/src/components/Chat/**)",
       "Read(//mnt/d/company_chat/company_chat/src/components/**)",
-      "Read(//mnt/c/Users/thira/Downloads/**)"
+      "Read(//mnt/c/Users/thira/Downloads/**)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Read(//mnt/d/company_chat/company_chat/**)",
+      "Read(//mnt/d/company_chat/**)",
+      "Bash(./gradlew:*)",
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "Bash(cmd.exe /c \"gradlew.bat clean\")",
+      "Bash(cmd.exe /c \"cd android && gradlew.bat clean\")",
+      "Bash(cmd.exe /c \"cd android && gradlew.bat --version\")",
+      "Bash(rm:*)",
+      "Read(//mnt/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot/**)",
+      "Bash(cmd.exe /c gradlew.bat clean)",
+      "Bash(cmd.exe /c gradlew.bat assembleRelease)",
+      "Bash(touch:*)"
     ],
     "deny": [],
     "ask": []
